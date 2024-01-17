@@ -26,10 +26,10 @@
       
 <h2 id="zero-shot-text-to-parameter-realtime-translation-for-game-character-auto-creation-and-identity-consistency-editing">Zero-Shot Text-to-Parameter Realtime Translation for Game Character Auto-Creation and Identity Consistency Editing </h2>
 <h3 id="abstract">Abstract </h3>
-<p>In the field of Role-Playing Games (RPGs), recent interest is shifting attention towards the creation of 3D game characters using textual descriptions instead of the direct customization that requires adjusting hundreds of parameters, recognizing that text-based methods lower the barrier to entry. This paper introduces an new <strong>Text-to-Parameter Editable model (T2PE)</strong> that allows players to rapidly obtain high-quality game characters aligned with their textual descriptions. T2PE leverages supervision from CLIP to optimize continuous and discrete game character parameters simultaneously. This differs from existing Text-to-Parameter (T2P) models, which typically rely on evolutionary search methods interacting with the game engine to optimize discrete parameters. Moreover, we present a method for consistent editing that enables modifications to already-generated game characters by adjusting the provided text prompts. Experimental results demonstrate that our proposed model not only generates higher quality game character 3D models compared to current mainstream methods but also substantially reduces latency. We see a <strong>2575% reduction in inference time</strong> on the lower TFLOPS device and a <strong>3.3% increase in CLIP score</strong>. To our knowledge, our method is the first among its kind to offer an approach for in-game character editing. Building upon this, we develop fast-T2P, an end-to-end translator trained using text-parameter pairs obtained from T2PE, which facilitates even faster generation of game characters.  Experimental results show that fast-T2P has yielded a remarkable enhancement in response time, exhibiting a staggering <strong>700% improvement</strong>.</p>
+<p>In the field of Role-Playing Games (RPGs), recent interest is shifting attention towards the creation of 3D game characters using textual descriptions instead of the direct customization that requires adjusting hundreds of parameters, recognizing that text-based methods lower the barrier to entry. This paper introduces a Text-to-Parameter Editable model (T2PE) that allows players to rapidly obtain high-quality game characters aligned with their textual descriptions. T2PE leverages supervision from CLIP to optimize continuous and discrete game character parameters simultaneously. This differs from existing Text-to-Parameter (T2P) models, which rely on evolutionary search algorithm interacting with the game engine to optimize discrete parameters. We also propose a method for game character editing that allows for minor modifications to previously generated game character by adjusting textual prompts while retaining the majority of their original features. Experimental results demonstrate that our proposed model not only generates higher quality 3D game characters compared to T2P models but also substantially reduces latency. We observe that T2PE achieves <strong>26x faster inference times</strong> and <strong>3.3% increase in CLIP score</strong> on lower TFLOPS devices. To the best of our knowledge, T2PE is the first among its kind to offer an approach for in-game character editing. Building upon this, we develop Fast-T2PE, an end-to-end translator trained using text-parameter pairs obtained from T2PE, which facilitates even faster generation of game characters. Experimental results show that Fast-T2PE further reduces <strong>response latency by 62.5%</strong> compared with T2PE.</p>
 <p><img src="T2PE_assets/teaser.png" alt=""></p>
 <p><em>Fig. 1</em>: The first row are game characters created by the proposed T2PE method using celebrities as prompts, the second row<br>
-are the edited characters(change hair color) based on the characters in the first row. The front view and side view are shown<br>
+are the edited characters (change hair color) based on the characters in the first row. The front view and side view are shown<br>
 for each character.</p>
 <p>The 3D effect of <em>Fig. 1</em> in the paper is shown below.</p>
 <details open="">
@@ -62,15 +62,15 @@ for each character.</p>
 <h4 id="optimization-pipeline">Optimization pipeline </h4>
 <p>First the continuous part of facial parameters are initialized to 0.5 while the discrete part are initialized to 0, then the discrete part of facial parameters are processed with the custom softmax function. The processed facial parameters are fed into our pretrained imitator to obtain the rendered image of the corresponding game character. Subsequently, the image is encoded into clip embedding using clip image encoder while the text prompt is encoded into clip text embedding using clip text encoder. We calculate our clip similarity loss function L<sub>CLIP</sub> based on the similarity of the clip text embedding and the clip image embedding. By utilizing this loss function L<sub>CLIP</sub>, we iteratively backpropagate and update the facial parameters until the maximum number of iterations is reached. This process ultimately yields facial parameters that align with the input text.</p>
 <p>The optimization pipeline is shown below.</p>
-<img src="T2PE_assets/opti.jpg" style="zoom: 67%;">
+<img src="T2PE_assets/optimization.jpg" style="zoom: 67%;">
 <h4 id="editing-pipeline">Editing pipeline </h4>
 <p>In order to ensure identity consistency while making the edited character align with the player’s input text prompt, we use a lightweight network called Mobile Face Net trained based on ArcFace as our backbone to extract image identity features. We can calculate the cosine face similarity L<sub>idt</sub> based on the extracted features. Besides, we add a loop back loss L<sub>loop</sub>  to encourage the parameters converge to the regions for which one of the true parameters resides. The ultimate loss function consists of these three loss functions combined with specific coefficients. We iteratively backpropagate and update the facial parameters until the maximum number of iterations is reached. This process ultimately yields facial parameters that align with the input text and maintain consistency with the identity of the created characters.</p>
 <p>The editing pipeline is shown below.</p>
-<img src="T2PE_assets/edit.jpg" style="zoom: 67%;">
+<img src="T2PE_assets/editing.jpg" style="zoom: 25%;">
 <h4 id="translator">Translator </h4>
 <p>In order to improve the efficiency of game character creation and provide faster response for gamers, we propose a translator model. We use the T2PE model proposed above to generate 100w text-parameters pairs. Then we use these text-parameters pairs to train a multi-layer perceptron as our translator <em>T</em> to map the input text embeddings (the output of CLIP text encoder) to facial parameters <em>x</em>.</p>
 <p>The details of our translator are shown below.</p>
-<img src="T2PE_assets\translator.jpg" style="zoom: 33%;">
+<img src="T2PE_assets\translator_structure.jpg" style="zoom: 25%;">
 <hr>
 <h3 id="data">Data </h3>
 <p>The continuous parameters correspond to translation, rotation, and scaling of facial features of the game character, whereas the discrete parameters are associated with customizable attributes such as hairstyle, hair color, makeup, and so on. We selecte five discrete parameters(hairstyle, hair color, lip makeup, skin tone, and eyebrow shape) and encoded them using one-hot encoding. These onehot encodings are concatenated with the continuous parameters, resulting in continuous parameters with a dimensionality of 176, and the final concatenated facial parameters had a dimensionality of 281. For imitator pretraining, we sampled 20w pairs of facial parameters and game character front face images from a multidimensional uniform distribution. For translator training, we generate 100w text prompts based on user habits and input them into the T2PE model proposed above, resulting in 100w text-parameters pairs. We use the obtained data to train our end-to-end translator,</p>
@@ -160,13 +160,13 @@ for each character.</p>
     <img src="T2PE_assets\Beyonce.png" width="400">
 </center>
 </details>
-<p>We feed 24 text prompts into DreamFusion, AvatarCLIP, TADA, Fantasia3D and our T2PE to create 3d model respectively. We compare CLIP score, inception score and time per prompt(run on Nvidia RTX 3090, note that the time of T2P is run on Nvidia A30 in the original paper) as shown in table I. It is evident that the game characters created by our T2PE method outperform AvatarCLIP, DreamFusion, TADA, Fantasia3D and T2P in terms of both CLIP score and Inception Score metrics.  The most crucial aspect is that our method exhibits significantly faster performance compared to the aforementioned methods, which is of utmost importance in the real-time rendering gaming domain.</p>
+It is evident that the game characters created by our T2PE method outperform Avatar CLIP, DreamFusion, TADA, Fantasia3D and T2P in terms of both CLIP score and inception score metrics. Compared to T2P, the CLIP score has witnessed an improvement, ascending from 35.72 to 36.90. Moreover, the inception score has increased from 1.65 to 1.77. This indicates that our T2PE can generate characters that are more align with the accompanying text and exhibit superior performance. The most crucial aspect is that our method exhibits significantly faster performance compared to the aforementioned methods, which is of utmost importance in the real-time rendering gaming domain. The response time of the T2P system has experienced a notable reduction, plummeting from 14.98s to a mere 0.56s. Although the scores of  Fast-T2PE in CLIP score and inception score have decreased compared to T2PE, it still shows an improvement compared to T2P, and it can further improve by 167% in response time.
 <p>The comparison results of indicators are shown below.</p>
 <img src="T2PE_assets\comparsion_table.jpg" style="zoom: 80%;">
 <h4 id="game-character-editing">Game Character Editing </h4>
-<p>We further edit the game characters created by our proposed T2PE. With identity loss, we can optimize both continuous and discrete parameters uniformly.  Figure below illustrates our ability to edit the game characters' hair color and hair style multiple times while preserving the character's identity, the face similarity between the edited character and the already-generated game character is consistently above 96%.</p>
+<p>We perform two consecutive edits on the game characters created by T2PE. With L<sub>idt</sub> and L<sub>loop</sub>, we can optimize both continuous and discrete parameters uniformly. It illustrates our ability to edit various features of game characters multiple times while preserving the character’s identity, the face similarity between the edited character and the original game character is consistently above 95%.</p>
 <p>The effect is shown below.</p>
-<img src="T2PE_assets\two_times_edit.jpg" style="zoom: 33%;">
+<img src="T2PE_assets\edit_multiple.jpg" style="zoom: 67%;">
 <details>
 <summary>Short hair, red hair</summary>
 <center class="half">
@@ -207,6 +207,69 @@ for each character.</p>
 <center class="half">
     <img src="T2PE_assets\Green hair.gif" width="400">
     <img src="T2PE_assets\Green hair.png" width="400">
+</center>
+</details>
+<details>
+<summary>Pink hair, high bun</summary>
+<center class="half">
+    <img src="T2PE_assets\pink_hair_high_bun.gif" width="400">
+    <img src="T2PE_assets\pink_hair_high_bun.png" width="400">
+</center>
+</details>
+<details>
+<summary>Small eyes</summary>
+<center class="half">
+    <img src="T2PE_assets\Small eyes.gif" width="400">
+    <img src="T2PE_assets\Small eyes.png" width="400">
+</center>
+</details>
+<details>
+<summary>Big eyes </summary>
+<center class="half">
+    <img src="T2PE_assets\Big eyes .gif" width="400">
+    <img src="T2PE_assets\Big eyes .png" width="400">
+</center>
+</details>
+<details>
+<summary>Blue, wavy hair</summary>
+<center class="half">
+    <img src="T2PE_assets\Blue, wavy hair.gif" width="400">
+    <img src="T2PE_assets\Blue, wavy hair.png" width="400">
+</center>
+</details>
+<details>
+<summary>Small nose</summary>
+<center class="half">
+    <img src="T2PE_assets\Small nose.gif" width="400">
+    <img src="T2PE_assets\Small nose.png" width="400">
+</center>
+</details>
+<details>
+<summary>Broad nose</summary>
+<center class="half">
+    <img src="T2PE_assets\Broad nose.gif" width="400">
+    <img src="T2PE_assets\Broad nose.png" width="400">
+</center>
+</details>
+<details>
+<summary>Yellow hair, double bun</summary>
+<center class="half">
+    <img src="T2PE_assets\Yellow hair, double bun.gif" width="400">
+    <img src="T2PE_assets\Yellow hair, double bun.png" width="400">
+</center>
+</details>
+<details>
+<summary>Black skin</summary>
+<center class="half">
+    <img src="T2PE_assets\Black skin.gif" width="400">
+    <img src="T2PE_assets\Black skin.png" width="400">
+</center>
+</details>
+<details>
+<summary>White skin</summary>
+<center class="half">
+    <img src="T2PE_assets\White skin.gif" width="400">
+    <img src="T2PE_assets\White skin.png" width="400">
 </center>
 </details>
 
